@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Blumen Ja/Nein Spiel</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: transparent !important;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: transparent !important;
+    }
+    .flower-container {
+      width: 400px;
+      height: 400px;
+      position: relative;
+      user-select: none;
+      cursor: pointer;
+      background: transparent !important;
+    }
+    .petal {
+      transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), transform 1.7s cubic-bezier(.45,1.5,.34,1.01);
+      stroke: #222;
+      stroke-width: 6px;
+      fill: #faf9f6;
+      filter: drop-shadow(0 0 1px #1112);
+      will-change: transform, opacity;
+    }
+    .petal.fall-left {
+      opacity: 0;
+      transform: translate(-120px, 180px) rotate(-70deg) scale(0.5);
+      pointer-events: none;
+    }
+    .petal.fall-right {
+      opacity: 0;
+      transform: translate(120px, 180px) rotate(70deg) scale(0.5);
+      pointer-events: none;
+    }
+    .center-circle {
+      stroke: #222;
+      stroke-width: 6px;
+      transition: fill 0.5s;
+    }
+    .center-text {
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      font-size: 3.1rem;
+      fill: #222;
+      text-anchor: middle;
+      alignment-baseline: middle;
+      pointer-events: none;
+      user-select: none;
+      letter-spacing: 3px;
+      transition: fill 0.5s;
+      dominant-baseline: middle;
+    }
+  </style>
+</head>
+<body>
+<div class="flower-container" id="flower-game">
+  <svg id="flower-svg" viewBox="0 0 400 400" width="100%" height="100%" style="background:transparent;">
+    <!-- Alles per JS -->
+  </svg>
+</div>
+<script>
+// Einstellungen für stark überlappende, runde Blätter
+const petalCount = 12;
+const petals = [];
+const center = {x: 200, y: 200};
+const centerRadius = 76;
+
+// Startpunkt fast in der Mitte für maximales Überlappen
+const petalStart = centerRadius - 70;
+const petalLength = 145;
+const petalTipRadius = 38;
+
+function createPetalPath(cx, cy, angle) {
+  const rad = angle * Math.PI / 180;
+
+  // Blattmitte
+  const sx = cx + Math.cos(rad) * petalStart;
+  const sy = cy + Math.sin(rad) * petalStart;
+
+  // Blattspitze
+  const tipX = cx + Math.cos(rad) * (petalStart + petalLength);
+  const tipY = cy + Math.sin(rad) * (petalStart + petalLength);
+
+  // Breite/Überlappung: Basispunkte sehr eng beieinander
+  const sideAngle = 69;
+  const baseLeftRad = (angle - sideAngle) * Math.PI / 180;
+  const baseRightRad = (angle + sideAngle) * Math.PI / 180;
+  const baseLeftX = cx + Math.cos(baseLeftRad) * (petalStart + petalLength * 0.18);
+  const baseLeftY = cy + Math.sin(baseLeftRad) * (petalStart + petalLength * 0.18);
+  const baseRightX = cx + Math.cos(baseRightRad) * (petalStart + petalLength * 0.18);
+  const baseRightY = cy + Math.sin(baseRightRad) * (petalStart + petalLength * 0.18);
+
+  // Runde Kuppe am Ende (Arc)
+  const tipAngleLeft = angle - 90;
+  const tipAngleRight = angle + 90;
+  const tipLeftX = tipX + Math.cos(tipAngleLeft * Math.PI / 180) * petalTipRadius;
+  const tipLeftY = tipY + Math.sin(tipAngleLeft * Math.PI / 180) * petalTipRadius;
+  const tipRightX = tipX + Math.cos(tipAngleRight * Math.PI / 180) * petalTipRadius;
+  const tipRightY = tipY + Math.sin(tipAngleRight * Math.PI / 180) * petalTipRadius;
+
+  return `
+    M ${baseLeftX} ${baseLeftY}
+    Q ${sx} ${sy}, ${tipLeftX} ${tipLeftY}
+    A ${petalTipRadius} ${petalTipRadius} 0 0 1 ${tipRightX} ${tipRightY}
+    Q ${sx} ${sy}, ${baseRightX} ${baseRightY}
+    Z
+  `;
+}
+
+// Blütenblätter zeichnen
+function renderPetals() {
+  const svg = document.getElementById('flower-svg');
+  svg.innerHTML = ''; // clear
+  for(let i=0;i<petalCount;i++) {
+    const angle = i * 360/petalCount - 90;
+    const path = createPetalPath(center.x, center.y, angle);
+    const petal = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    petal.setAttribute("d", path);
+    petal.setAttribute("class", "petal");
+    petal.setAttribute("data-idx", i);
+    petal.style.transformOrigin = "200px 200px";
+    svg.appendChild(petal);
+    petals[i] = petal;
+  }
+}
+
+// Mittelkreis und Text wie gehabt
+function renderCenter(text="JA") {
+  const svg = document.getElementById('flower-svg');
+  let group = document.getElementById('center-group');
+  if(!group) {
+    group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    group.setAttribute("id", "center-group");
+    svg.appendChild(group);
+  }
+  const fillColor = (text === "JA") ? "#ffff33" : "#FF51B0";
+  group.innerHTML = `
+    <circle class="center-circle" id="center-circle" cx="200" cy="200" r="76" fill="${fillColor}"/>
+    <text id="center-text" x="200" y="200" class="center-text">${text}</text>
+  `;
+  svg.appendChild(group); // Damit er ganz oben liegt!
+}
+
+function nextText(idx) {
+  if(idx === petalCount) return "JA";
+  return (idx % 2 === 0) ? "JA" : "NEIN";
+}
+
+// Initialisierung
+renderPetals();
+renderCenter("JA");
+
+let current = 0;
+let finished = false;
+
+document.getElementById('flower-game').addEventListener('click', function() {
+  if(finished) return;
+  const idx = petals.findIndex(p=>!p.classList.contains('fall-left') && !p.classList.contains('fall-right'));
+  if(idx === -1) return;
+  if(current % 2 === 0) {
+    petals[idx].classList.add('fall-left');
+  } else {
+    petals[idx].classList.add('fall-right');
+  }
+  current++;
+  const text = nextText(current);
+  renderCenter(text);
+
+  if(current === petalCount) {
+    finished = true;
+  }
+});
+</script>
+</body>
+</html>
