@@ -10,6 +10,7 @@
       margin: 0;
       padding: 0;
       background: transparent !important;
+      overflow: hidden;
     }
     body {
       display: flex;
@@ -19,20 +20,21 @@
       background: transparent !important;
     }
     .flower-container {
-      width: 400px;
-      height: 400px;
+      width: 600px;
+      height: 600px;
       position: relative;
       user-select: none;
       cursor: pointer;
       background: transparent !important;
     }
     .petal {
+      position: absolute;
+      width: 150px;
+      height: 200px;
       transition: opacity 0.9s cubic-bezier(0.22, 0.61, 0.36, 1), transform 1.7s cubic-bezier(.45,1.5,.34,1.01);
-      stroke: #222;
-      stroke-width: 6px;
-      fill: #faf9f6;
-      filter: drop-shadow(0 0 1px #1112);
       will-change: transform, opacity;
+      transform-origin: center bottom;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
     }
     .petal.fall-left {
       opacity: 0;
@@ -44,113 +46,105 @@
       transform: translate(120px, 180px) rotate(70deg) scale(0.5);
       pointer-events: none;
     }
-    .center-circle {
-      stroke: #222;
-      stroke-width: 6px;
-      transition: fill 0.5s;
+    .center-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      border: 6px solid #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.5s;
+      z-index: 100;
     }
     .center-text {
       font-family: Arial, Helvetica, sans-serif;
       font-weight: bold;
-      font-size: 3.1rem;
-      fill: #222;
-      text-anchor: middle;
-      alignment-baseline: middle;
+      font-size: 2.5rem;
+      color: #222;
+      text-align: center;
       pointer-events: none;
       user-select: none;
-      letter-spacing: 3px;
-      transition: fill 0.5s;
-      dominant-baseline: middle;
+      letter-spacing: 2px;
+      transition: color 0.5s;
+    }
+    .center-ja {
+      background-color: #ffff33;
+    }
+    .center-nein {
+      background-color: #FF51B0;
     }
   </style>
 </head>
 <body>
 <div class="flower-container" id="flower-game">
-  <svg id="flower-svg" viewBox="0 0 400 400" width="100%" height="100%" style="background:transparent;">
-    <!-- Alles per JS -->
-  </svg>
+  <div class="center-container center-ja" id="center-container">
+    <div class="center-text" id="center-text">JA</div>
+  </div>
 </div>
 <script>
-// Einstellungen für stark überlappende, runde Blätter
+// Petal images - alternating between the 3 types
+const petalImages = [
+  'website_BLUME_blüte_01.png',
+  'website_BLUME_blüte_02.png',
+  'website_BLUME_blüte_03.png'
+];
+
 const petalCount = 12;
 const petals = [];
-const center = {x: 200, y: 200};
-const centerRadius = 76;
+const center = {x: 300, y: 300}; // Center of 600x600 container
+const petalDistance = 100; // Distance from center to petal base
 
-// Startpunkt fast in der Mitte für maximales Überlappen
-const petalStart = centerRadius - 70;
-const petalLength = 145;
-const petalTipRadius = 38;
-
-function createPetalPath(cx, cy, angle) {
+function createPetal(index) {
+  const angle = (index * 360 / petalCount) - 90; // Start from top
   const rad = angle * Math.PI / 180;
-
-  // Blattmitte
-  const sx = cx + Math.cos(rad) * petalStart;
-  const sy = cy + Math.sin(rad) * petalStart;
-
-  // Blattspitze
-  const tipX = cx + Math.cos(rad) * (petalStart + petalLength);
-  const tipY = cy + Math.sin(rad) * (petalStart + petalLength);
-
-  // Breite/Überlappung: Basispunkte sehr eng beieinander
-  const sideAngle = 69;
-  const baseLeftRad = (angle - sideAngle) * Math.PI / 180;
-  const baseRightRad = (angle + sideAngle) * Math.PI / 180;
-  const baseLeftX = cx + Math.cos(baseLeftRad) * (petalStart + petalLength * 0.18);
-  const baseLeftY = cy + Math.sin(baseLeftRad) * (petalStart + petalLength * 0.18);
-  const baseRightX = cx + Math.cos(baseRightRad) * (petalStart + petalLength * 0.18);
-  const baseRightY = cy + Math.sin(baseRightRad) * (petalStart + petalLength * 0.18);
-
-  // Runde Kuppe am Ende (Arc)
-  const tipAngleLeft = angle - 90;
-  const tipAngleRight = angle + 90;
-  const tipLeftX = tipX + Math.cos(tipAngleLeft * Math.PI / 180) * petalTipRadius;
-  const tipLeftY = tipY + Math.sin(tipAngleLeft * Math.PI / 180) * petalTipRadius;
-  const tipRightX = tipX + Math.cos(tipAngleRight * Math.PI / 180) * petalTipRadius;
-  const tipRightY = tipY + Math.sin(tipAngleRight * Math.PI / 180) * petalTipRadius;
-
-  return `
-    M ${baseLeftX} ${baseLeftY}
-    Q ${sx} ${sy}, ${tipLeftX} ${tipLeftY}
-    A ${petalTipRadius} ${petalTipRadius} 0 0 1 ${tipRightX} ${tipRightY}
-    Q ${sx} ${sy}, ${baseRightX} ${baseRightY}
-    Z
-  `;
+  
+  // Calculate position
+  const x = center.x + Math.cos(rad) * petalDistance - 75; // -75 to center the 150px wide petal
+  const y = center.y + Math.sin(rad) * petalDistance - 100; // -100 to position petal base at circle
+  
+  // Create petal element
+  const petal = document.createElement('img');
+  petal.src = petalImages[index % petalImages.length]; // Cycle through the 3 images
+  petal.className = 'petal';
+  petal.style.left = x + 'px';
+  petal.style.top = y + 'px';
+  petal.style.transform = `rotate(${angle + 90}deg)`; // +90 because petals point outward
+  petal.style.transformOrigin = 'center bottom';
+  petal.setAttribute('data-idx', index);
+  
+  return petal;
 }
 
-// Blütenblätter zeichnen
 function renderPetals() {
-  const svg = document.getElementById('flower-svg');
-  svg.innerHTML = ''; // clear
-  for(let i=0;i<petalCount;i++) {
-    const angle = i * 360/petalCount - 90;
-    const path = createPetalPath(center.x, center.y, angle);
-    const petal = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    petal.setAttribute("d", path);
-    petal.setAttribute("class", "petal");
-    petal.setAttribute("data-idx", i);
-    petal.style.transformOrigin = "200px 200px";
-    svg.appendChild(petal);
+  const container = document.getElementById('flower-game');
+  // Remove existing petals
+  const existingPetals = container.querySelectorAll('.petal');
+  existingPetals.forEach(p => p.remove());
+  
+  // Create new petals
+  for(let i = 0; i < petalCount; i++) {
+    const petal = createPetal(i);
+    container.appendChild(petal);
     petals[i] = petal;
   }
 }
 
-// Mittelkreis und Text wie gehabt
-function renderCenter(text="JA") {
-  const svg = document.getElementById('flower-svg');
-  let group = document.getElementById('center-group');
-  if(!group) {
-    group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    group.setAttribute("id", "center-group");
-    svg.appendChild(group);
+function updateCenter(text) {
+  const centerContainer = document.getElementById('center-container');
+  const centerText = document.getElementById('center-text');
+  
+  centerText.textContent = text;
+  
+  if(text === "JA") {
+    centerContainer.className = 'center-container center-ja';
+  } else {
+    centerContainer.className = 'center-container center-nein';
   }
-  const fillColor = (text === "JA") ? "#ffff33" : "#FF51B0";
-  group.innerHTML = `
-    <circle class="center-circle" id="center-circle" cx="200" cy="200" r="76" fill="${fillColor}"/>
-    <text id="center-text" x="200" y="200" class="center-text">${text}</text>
-  `;
-  svg.appendChild(group); // Damit er ganz oben liegt!
 }
 
 function nextText(idx) {
@@ -158,29 +152,52 @@ function nextText(idx) {
   return (idx % 2 === 0) ? "JA" : "NEIN";
 }
 
-// Initialisierung
+// Initialize
 renderPetals();
-renderCenter("JA");
+updateCenter("JA");
 
 let current = 0;
 let finished = false;
 
-document.getElementById('flower-game').addEventListener('click', function() {
+document.getElementById('flower-game').addEventListener('click', function(e) {
   if(finished) return;
-  const idx = petals.findIndex(p=>!p.classList.contains('fall-left') && !p.classList.contains('fall-right'));
+  
+  // Find the first petal that hasn't fallen yet
+  const idx = petals.findIndex(p => !p.classList.contains('fall-left') && !p.classList.contains('fall-right'));
   if(idx === -1) return;
+  
+  // Make petal fall (alternating left/right)
   if(current % 2 === 0) {
     petals[idx].classList.add('fall-left');
   } else {
     petals[idx].classList.add('fall-right');
   }
+  
   current++;
   const text = nextText(current);
-  renderCenter(text);
+  updateCenter(text);
 
   if(current === petalCount) {
     finished = true;
   }
+});
+
+// Handle image loading errors
+document.addEventListener('DOMContentLoaded', function() {
+  const images = document.querySelectorAll('.petal');
+  images.forEach(img => {
+    img.addEventListener('error', function() {
+      console.log('Failed to load image:', this.src);
+      // Fallback: create a simple colored div
+      const fallback = document.createElement('div');
+      fallback.className = this.className;
+      fallback.style.cssText = this.style.cssText;
+      fallback.style.background = '#faf9f6';
+      fallback.style.border = '3px solid #222';
+      fallback.style.borderRadius = '50% 50% 50% 50% / 60% 60% 40% 40%';
+      this.parentNode.replaceChild(fallback, this);
+    });
+  });
 });
 </script>
 </body>
