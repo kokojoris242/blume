@@ -36,6 +36,8 @@
       transform-origin: 50% 75%;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
       z-index: 10;
+      object-fit: contain;
+      object-position: center;
     }
     .petal.fall-left {
       opacity: 0;
@@ -88,21 +90,21 @@
   </div>
 </div>
 <script>
-// Direct petals using raw GitHub URLs
+// Direct petals using correct raw GitHub URLs
 const petals = [];
 const petalElements = [
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_01.png', x: 200, y: 150, rotation: 0 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_02.png', x: 280, y: 160, rotation: 30 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_03.png', x: 350, y: 200, rotation: 60 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_01.png', x: 380, y: 280, rotation: 90 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_02.png', x: 350, y: 360, rotation: 120 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_03.png', x: 280, y: 400, rotation: 150 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_01.png', x: 200, y: 410, rotation: 180 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_02.png', x: 120, y: 360, rotation: 210 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_03.png', x: 90, y: 280, rotation: 240 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_01.png', x: 120, y: 200, rotation: 270 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_02.png', x: 150, y: 160, rotation: 300 },
-  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_bl%C3%BCte_03.png', x: 220, y: 140, rotation: 330 }
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_01.png', x: 200, y: 150, rotation: 0 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_02.png', x: 280, y: 160, rotation: 30 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_03.png', x: 350, y: 200, rotation: 60 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_01.png', x: 380, y: 280, rotation: 90 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_02.png', x: 350, y: 360, rotation: 120 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_03.png', x: 280, y: 400, rotation: 150 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_01.png', x: 200, y: 410, rotation: 180 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_02.png', x: 120, y: 360, rotation: 210 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_03.png', x: 90, y: 280, rotation: 240 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_01.png', x: 120, y: 200, rotation: 270 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_02.png', x: 150, y: 160, rotation: 300 },
+  { src: 'https://raw.githubusercontent.com/kokojoris242/blume/main/website_BLUME_blüte_03.png', x: 220, y: 140, rotation: 330 }
 ];
 
 function renderPetals() {
@@ -119,7 +121,32 @@ function renderPetals() {
     petal.style.left = petalData.x + 'px';
     petal.style.top = petalData.y + 'px';
     petal.style.transform = `rotate(${petalData.rotation}deg)`;
+    petal.style.width = '120px';
+    petal.style.height = '160px';
+    petal.style.objectFit = 'contain';
     petal.setAttribute('data-idx', index);
+    
+    // Add load event listener for debugging
+    petal.addEventListener('load', function() {
+      console.log('Successfully loaded:', this.src);
+    });
+    
+    petal.addEventListener('error', function() {
+      console.log('Failed to load:', this.src);
+      // Create fallback
+      const fallback = document.createElement('div');
+      fallback.className = this.className;
+      fallback.style.cssText = this.style.cssText;
+      fallback.style.width = '80px';
+      fallback.style.height = '120px';
+      fallback.style.background = '#f0f0f0';
+      fallback.style.border = '2px solid #ccc';
+      fallback.style.borderRadius = '50% 50% 50% 50% / 60% 60% 40% 40%';
+      fallback.setAttribute('data-idx', this.getAttribute('data-idx'));
+      this.parentNode.replaceChild(fallback, this);
+      petals[index] = fallback;
+    });
+    
     container.appendChild(petal);
     petals[index] = petal;
   });
